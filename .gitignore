@@ -15,9 +15,6 @@ dist-ssr
 #ENV
 .env
 
-#admin-pages
-AdminDashboard.jsx
-AdminTopUp.jsx
 
 # Editor directories and files
 .vscode/*
