@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import Navbar from "../components/Navbar";
+import API from "../api/axios";
 
 const TransactionHistory = () => {
   const authData = localStorage.getItem("auth");
@@ -18,7 +18,7 @@ const TransactionHistory = () => {
 
     const fetchTransactions = async () => {
       try {
-        const response = await axios.get("/api/users/transactions", {
+        const response = await API.get("/api/users/transactions", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setTransactions(response.data.transactions);
