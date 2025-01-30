@@ -30,7 +30,6 @@ const Dashboard = () => {
   const fetchDashboardData = async (token, loggedInUserId) => {
     try {
       setLoading(true);
-
       const [userResponse, profileResponse] = await Promise.all([
         API.get("/api/users/transaction-list", {
           headers: { Authorization: `Bearer ${token}` },
@@ -40,8 +39,8 @@ const Dashboard = () => {
         }),
       ]);
 
-      // Exclude the logged-in user from the list
-      const filteredUsers = userResponse.data.filter(user => user._id !== loggedInUserId);
+      // Exclude the logged-in user
+      const filteredUsers = userResponse.data.filter((user) => user._id !== loggedInUserId);
       setUsers(filteredUsers);
       setWalletBalance(profileResponse.data.walletBalance);
     } catch (error) {
@@ -92,7 +91,7 @@ const Dashboard = () => {
     <div className="bg-gray-100 min-h-screen">
       <Navbar />
 
-      <div className="max-w-4xl mx-auto bg-white p-6 mt-6 rounded-lg shadow-lg">
+      <div className="max-w-4xl mx-auto bg-white p-6 mt-6 rounded-lg shadow-lg w-full md:w-3/4 lg:w-2/3">
         <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">Dashboard</h1>
 
         {/* Wallet Balance */}
@@ -106,7 +105,7 @@ const Dashboard = () => {
         {loading ? (
           <p className="text-center text-gray-500">Loading users...</p>
         ) : users.length > 0 ? (
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             {users.map((user) => (
               <button
                 key={user._id}

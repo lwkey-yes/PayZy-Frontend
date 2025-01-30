@@ -42,6 +42,7 @@ const Profile = () => {
 
   const handleUpdateProfile = async () => {
     try {
+      setMessage({ type: "", text: "" });
       const response = await API.put(
         "/api/users/profile",
         { name: profile.name, email: profile.email },
@@ -53,7 +54,7 @@ const Profile = () => {
           },
         }
       );
-      setMessage({ type: "success", text: response.data.message });
+      setMessage({ type: "success", text: "Profile updated successfully!" });
     } catch (error) {
       console.error("Error updating profile:", error);
       setMessage({
@@ -80,26 +81,26 @@ const Profile = () => {
     }
   };
 
-  if (loading) return <p>Loading...</p>;
+  if (loading)
+    return <p className="text-center text-gray-500 mt-10">Loading...</p>;
 
-  if (error) return <p className="text-red-500">{error}</p>;
+  if (error)
+    return <p className="text-center text-red-500 mt-10">{error}</p>;
 
   return (
     <div className="min-h-screen bg-gray-100">
       <Navbar />
       <div className="max-w-3xl mx-auto p-6 bg-white shadow-md rounded-lg mt-6">
-        <h1 className="text-2xl font-bold mb-4">My Profile</h1>
+        <h1 className="text-2xl font-bold mb-4 text-gray-800 text-center">
+          My Profile
+        </h1>
 
-        <div className="bg-blue-100 p-4 rounded-md mb-6">
-          <p>
-            <strong>Name:</strong> {profile.name}
-          </p>
-          <p>
-            <strong>Email:</strong> {profile.email}
-          </p>
-          <p>
-            <strong>Wallet Balance:</strong> ₹{walletBalance}
-          </p>
+        {/* Wallet Balance Section */}
+        <div className="mb-6 p-4 bg-blue-100 border-l-4 border-blue-600 rounded-lg">
+          <h2 className="text-lg font-semibold text-gray-800">
+            Wallet Balance
+          </h2>
+          <p className="text-3xl font-bold text-blue-700">₹{walletBalance}</p>
         </div>
 
         {/* Profile Update Form */}
@@ -111,28 +112,30 @@ const Profile = () => {
           className="space-y-4"
         >
           <label className="block">
-            Name:
+            <span className="font-semibold text-gray-700">Name:</span>
             <input
               type="text"
               value={profile.name}
               onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-              className="border p-2 w-full rounded"
+              className="border p-2 w-full rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </label>
+
           <label className="block">
-            Email:
+            <span className="font-semibold text-gray-700">Email:</span>
             <input
               type="email"
               value={profile.email}
               onChange={(e) =>
                 setProfile({ ...profile, email: e.target.value })
               }
-              className="border p-2 w-full rounded"
+              className="border p-2 w-full rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </label>
+
           <button
             type="submit"
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
           >
             Update Profile
           </button>
@@ -142,17 +145,19 @@ const Profile = () => {
         <div className="mt-8">
           <h2 className="text-xl font-bold">Reset Password</h2>
           <label className="block mt-4">
-            Enter your email to reset password:
+            <span className="font-semibold text-gray-700">
+              Enter your email to reset password:
+            </span>
             <input
               type="email"
               value={passwordResetEmail}
               onChange={(e) => setPasswordResetEmail(e.target.value)}
-              className="border p-2 w-full rounded"
+              className="border p-2 w-full rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </label>
           <button
             onClick={handlePasswordResetRequest}
-            className="bg-blue-500 text-white px-4 py-2 mt-4 rounded hover:bg-blue-600"
+            className="w-full bg-red-600 text-white px-4 py-2 mt-4 rounded hover:bg-red-700 transition"
           >
             Request Password Reset
           </button>
@@ -161,10 +166,10 @@ const Profile = () => {
         {/* Message Display */}
         {message.text && (
           <div
-            className={`mt-4 p-3 rounded ${
+            className={`mt-4 p-3 rounded-lg font-semibold text-center ${
               message.type === "success"
-                ? "bg-green-100 text-green-600"
-                : "bg-red-100 text-red-600"
+                ? "bg-green-100 text-green-700 border-l-4 border-green-500"
+                : "bg-red-100 text-red-700 border-l-4 border-red-500"
             }`}
           >
             {message.text}
