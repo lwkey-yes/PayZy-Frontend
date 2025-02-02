@@ -235,7 +235,7 @@ const Profile = () => {
 
 
         {/* Change PIN Section */}
-        <div className="mt-8">
+        {/* <div className="mt-8">
           <h2 className="text-xl font-bold">Change Transaction PIN</h2>
 
           <label className="block mt-4">
@@ -287,7 +287,7 @@ const Profile = () => {
           >
             {updating ? "Updating PIN..." : "Update PIN"}
           </button>
-        </div>
+        </div> */}
 
         {/* Message Display */}
         {message.text && (
