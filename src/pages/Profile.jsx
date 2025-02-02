@@ -9,6 +9,8 @@ const Profile = () => {
   const [error, setError] = useState("");
   const [passwordResetEmail, setPasswordResetEmail] = useState("");
   const [message, setMessage] = useState({ type: "", text: "" });
+  const [errors, setErrors] = useState({});
+  const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
     const fetchUserDetails = async () => {
@@ -40,9 +42,31 @@ const Profile = () => {
     fetchUserDetails();
   }, []);
 
+  // 🛑 Validate Email Format
+  const isValidEmail = (email) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  const validateForm = () => {
+    let newErrors = {};
+
+    if (!profile.name.trim()) {
+      newErrors.name = "Full name is required";
+    }
+    if (!isValidEmail(profile.email)) {
+      newErrors.email = "Invalid email format";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleUpdateProfile = async () => {
+    if (!validateForm()) return;
+
     try {
+      setUpdating(true);
       setMessage({ type: "", text: "" });
+
       const response = await API.put(
         "/api/users/profile",
         { name: profile.name, email: profile.email },
@@ -54,6 +78,7 @@ const Profile = () => {
           },
         }
       );
+
       setMessage({ type: "success", text: "Profile updated successfully!" });
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -61,14 +86,24 @@ const Profile = () => {
         type: "error",
         text: error.response?.data?.message || "Failed to update profile.",
       });
+    } finally {
+      setUpdating(false);
     }
   };
 
   const handlePasswordResetRequest = async () => {
     try {
+      setMessage({ type: "", text: "" });
+
+      if (!isValidEmail(passwordResetEmail)) {
+        setMessage({ type: "error", text: "Enter a valid email address." });
+        return;
+      }
+
       const response = await API.post("/api/users/request-password-reset", {
         email: passwordResetEmail,
       });
+
       setMessage({ type: "success", text: response.data.message });
     } catch (error) {
       console.error("Error requesting password reset:", error);
@@ -117,8 +152,11 @@ const Profile = () => {
               type="text"
               value={profile.name}
               onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-              className="border p-2 w-full rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className={`border p-2 w-full rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                errors.name ? "border-red-500" : ""
+              }`}
             />
+            {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
           </label>
 
           <label className="block">
@@ -129,15 +167,19 @@ const Profile = () => {
               onChange={(e) =>
                 setProfile({ ...profile, email: e.target.value })
               }
-              className="border p-2 w-full rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className={`border p-2 w-full rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                errors.email ? "border-red-500" : ""
+              }`}
             />
+            {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
           </label>
 
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+            disabled={updating}
+            className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition disabled:opacity-50"
           >
-            Update Profile
+            {updating ? "Updating..." : "Update Profile"}
           </button>
         </form>
 

@@ -8,6 +8,7 @@ const Dashboard = () => {
   const [walletBalance, setWalletBalance] = useState(0);
   const [selectedUser, setSelectedUser] = useState(null);
   const [amount, setAmount] = useState("");
+  const [transactionPin, setTransactionPin] = useState(""); // ✅ Add PIN state
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -65,18 +66,24 @@ const Dashboard = () => {
       return;
     }
 
+    if (!/^\d{4}$/.test(transactionPin)) {
+      setMessage({ type: "error", text: "Transaction PIN must be exactly 4 digits." });
+      return;
+    }
+
     try {
       setIsProcessing(true);
       const { token } = JSON.parse(localStorage.getItem("auth"));
       const paymentResponse = await API.post(
         "/api/users/pay",
-        { receiverId: selectedUser._id, amount },
+        { receiverId: selectedUser._id, amount, transactionPin }, // ✅ Send transaction PIN
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       setWalletBalance(paymentResponse.data.sender.walletBalance);
       setMessage({ type: "success", text: "Payment successful!" });
       setAmount("");
+      setTransactionPin(""); // ✅ Reset PIN input
       setSelectedUser(null);
       fetchDashboardData(token, userId);
     } catch (error) {
@@ -138,6 +145,17 @@ const Dashboard = () => {
               onChange={(e) => setAmount(e.target.value)}
               className="w-full p-2 border rounded mt-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
+
+            {/* ✅ Transaction PIN Input */}
+            <input
+              type="password"
+              placeholder="Enter 4-digit PIN"
+              value={transactionPin}
+              onChange={(e) => setTransactionPin(e.target.value)}
+              maxLength={4} // ✅ Restrict to 4 characters
+              className="w-full p-2 border rounded mt-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+
             <button
               onClick={handlePayment}
               disabled={isProcessing}
