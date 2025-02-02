@@ -146,13 +146,13 @@ const Dashboard = () => {
               className="w-full p-2 border rounded mt-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
 
-            {/* ✅ Transaction PIN Input */}
+            
             <input
               type="password"
               placeholder="Enter 4-digit PIN"
               value={transactionPin}
               onChange={(e) => setTransactionPin(e.target.value)}
-              maxLength={4} // ✅ Restrict to 4 characters
+              maxLength={4}
               className="w-full p-2 border rounded mt-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
 

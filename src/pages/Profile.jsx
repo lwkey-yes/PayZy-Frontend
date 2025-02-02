@@ -11,29 +11,31 @@ const Profile = () => {
   const [message, setMessage] = useState({ type: "", text: "" });
   const [errors, setErrors] = useState({});
   const [updating, setUpdating] = useState(false);
+  const [currentPIN, setCurrentPIN] = useState("");
+  const [newPIN, setNewPIN] = useState("");
+  const [confirmPIN, setConfirmPIN] = useState("");
 
+  const getAuthHeaders = () => {
+    const auth = JSON.parse(localStorage.getItem("auth") || "{}");
+    return { headers: { Authorization: `Bearer ${auth?.token}` } };
+  };
+
+  // ✅ Fetch user details on component mount
   useEffect(() => {
     const fetchUserDetails = async () => {
       try {
-        const auth = JSON.parse(localStorage.getItem("auth"));
-
-        if (!auth || !auth.token) {
+        const auth = JSON.parse(localStorage.getItem("auth") || "{}");
+        if (!auth?.token) {
           setError("Unauthorized access");
           setLoading(false);
           return;
         }
 
-        const response = await API.get("/api/users/profile", {
-          headers: { Authorization: `Bearer ${auth.token}` },
-        });
-
+        const response = await API.get("/api/users/profile", getAuthHeaders());
         setProfile({ name: response.data.name, email: response.data.email });
-        setWalletBalance(response.data.walletBalance || 0);
+        setWalletBalance(response.data.walletBalance ?? 0);
       } catch (err) {
-        console.error("Error fetching user details:", err);
-        setError(
-          err.response?.data?.message || "Unable to fetch user details."
-        );
+        setError(err.response?.data?.message || "Unable to fetch user details.");
       } finally {
         setLoading(false);
       }
@@ -42,24 +44,65 @@ const Profile = () => {
     fetchUserDetails();
   }, []);
 
-  // 🛑 Validate Email Format
-  const isValidEmail = (email) =>
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  // ✅ Validate PIN input
+  const isValidPIN = (pin) => /^\d{4}$/.test(pin);
 
-  const validateForm = () => {
+  const validatePIN = () => {
     let newErrors = {};
 
-    if (!profile.name.trim()) {
-      newErrors.name = "Full name is required";
+    if (!isValidPIN(currentPIN)) {
+      newErrors.currentPIN = "Current PIN must be exactly 4 digits.";
     }
-    if (!isValidEmail(profile.email)) {
-      newErrors.email = "Invalid email format";
+    if (!isValidPIN(newPIN)) {
+      newErrors.newPIN = "New PIN must be exactly 4 digits.";
+    }
+    if (newPIN !== confirmPIN) {
+      newErrors.confirmPIN = "PINs do not match.";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // ✅ Update PIN
+  const handleUpdatePIN = async () => {
+    if (!validatePIN()) return;
+
+    try {
+      setUpdating(true);
+      setMessage({ type: "", text: "" });
+
+      await API.put("/api/users/update-pin", { currentPIN, newPIN }, getAuthHeaders());
+
+      setMessage({ type: "success", text: "Transaction PIN updated successfully!" });
+      setCurrentPIN("");
+      setNewPIN("");
+      setConfirmPIN("");
+    } catch (error) {
+      setMessage({ type: "error", text: error.response?.data?.message || "Failed to update PIN." });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  // ✅ Validate Profile Form
+  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  const validateForm = () => {
+    let newErrors = {};
+
+    if (!profile.name.trim()) {
+      newErrors.name = "Full name is required.";
+    }
+    if (!isValidEmail(profile.email)) {
+      newErrors.email = "Invalid email format.";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // ✅ Update Profile
   const handleUpdateProfile = async () => {
     if (!validateForm()) return;
 
@@ -67,60 +110,45 @@ const Profile = () => {
       setUpdating(true);
       setMessage({ type: "", text: "" });
 
-      const response = await API.put(
-        "/api/users/profile",
-        { name: profile.name, email: profile.email },
-        {
-          headers: {
-            Authorization: `Bearer ${
-              JSON.parse(localStorage.getItem("auth")).token
-            }`,
-          },
-        }
-      );
+      // Fetch latest profile data to check if anything changed
+      const response = await API.get("/api/users/profile", getAuthHeaders());
+
+      if (response.data.name === profile.name && response.data.email === profile.email) {
+        setMessage({ type: "info", text: "No changes detected." });
+        return;
+      }
+
+      await API.put("/api/users/profile", { name: profile.name, email: profile.email }, getAuthHeaders());
 
       setMessage({ type: "success", text: "Profile updated successfully!" });
     } catch (error) {
-      console.error("Error updating profile:", error);
-      setMessage({
-        type: "error",
-        text: error.response?.data?.message || "Failed to update profile.",
-      });
+      setMessage({ type: "error", text: error.response?.data?.message || "Failed to update profile." });
     } finally {
       setUpdating(false);
     }
   };
 
+  // ✅ Request Password Reset
   const handlePasswordResetRequest = async () => {
+    if (!isValidEmail(passwordResetEmail)) {
+      setMessage({ type: "error", text: "Enter a valid email address." });
+      return;
+    }
+
     try {
       setMessage({ type: "", text: "" });
 
-      if (!isValidEmail(passwordResetEmail)) {
-        setMessage({ type: "error", text: "Enter a valid email address." });
-        return;
-      }
-
-      const response = await API.post("/api/users/request-password-reset", {
-        email: passwordResetEmail,
-      });
+      const response = await API.post("/api/users/request-password-reset", { email: passwordResetEmail });
 
       setMessage({ type: "success", text: response.data.message });
     } catch (error) {
-      console.error("Error requesting password reset:", error);
-      setMessage({
-        type: "error",
-        text:
-          error.response?.data?.message ||
-          "Failed to send password reset email.",
-      });
+      setMessage({ type: "error", text: error.response?.data?.message || "Failed to send password reset email." });
     }
   };
 
-  if (loading)
-    return <p className="text-center text-gray-500 mt-10">Loading...</p>;
+  if (loading) return <p className="text-center text-gray-500 mt-10">Loading...</p>;
+  if (error) return <p className="text-center text-red-500 mt-10">{error}</p>;
 
-  if (error)
-    return <p className="text-center text-red-500 mt-10">{error}</p>;
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -205,6 +233,62 @@ const Profile = () => {
           </button>
         </div>
 
+
+        {/* Change PIN Section */}
+        <div className="mt-8">
+          <h2 className="text-xl font-bold">Change Transaction PIN</h2>
+
+          <label className="block mt-4">
+            <span className="font-semibold text-gray-700">Current PIN:</span>
+            <input
+              type="password"
+              value={currentPIN}
+              maxLength={4}
+              onChange={(e) => setCurrentPIN(e.target.value)}
+              className={`border p-2 w-full rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                errors.currentPIN ? "border-red-500" : ""
+              }`}
+            />
+            {errors.currentPIN && <p className="text-red-500 text-xs mt-1">{errors.currentPIN}</p>}
+          </label>
+
+          <label className="block mt-4">
+            <span className="font-semibold text-gray-700">New PIN:</span>
+            <input
+              type="password"
+              value={newPIN}
+              maxLength={4}
+              onChange={(e) => setNewPIN(e.target.value)}
+              className={`border p-2 w-full rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                errors.newPIN ? "border-red-500" : ""
+              }`}
+            />
+            {errors.newPIN && <p className="text-red-500 text-xs mt-1">{errors.newPIN}</p>}
+          </label>
+
+          <label className="block mt-4">
+            <span className="font-semibold text-gray-700">Confirm New PIN:</span>
+            <input
+              type="password"
+              value={confirmPIN}
+              maxLength={4}
+              onChange={(e) => setConfirmPIN(e.target.value)}
+              className={`border p-2 w-full rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                errors.confirmPIN ? "border-red-500" : ""
+              }`}
+            />
+            {errors.confirmPIN && <p className="text-red-500 text-xs mt-1">{errors.confirmPIN}</p>}
+          </label>
+
+          <button
+            onClick={handleUpdatePIN}
+            disabled={updating}
+            className="w-full bg-blue-600 text-white px-4 py-2 mt-4 rounded hover:bg-blue-700 transition disabled:opacity-50"
+          >
+            {updating ? "Updating PIN..." : "Update PIN"}
+          </button>
+        </div>
+
         {/* Message Display */}
         {message.text && (
           <div
@@ -217,6 +301,7 @@ const Profile = () => {
             {message.text}
           </div>
         )}
+
       </div>
     </div>
   );
