@@ -60,27 +60,52 @@ const Dashboard = () => {
       setMessage({ type: "error", text: "Please select a user and enter a valid amount." });
       return;
     }
-
+  
     if (amount > walletBalance) {
       setMessage({ type: "error", text: "Insufficient balance." });
       return;
     }
-
+  
     if (!/^\d{4}$/.test(transactionPin)) {
       setMessage({ type: "error", text: "Transaction PIN must be exactly 4 digits." });
       return;
     }
-
+  
     try {
       setIsProcessing(true);
-      const { token } = JSON.parse(localStorage.getItem("auth"));
+      const authData = localStorage.getItem("auth");
+      if (!authData) {
+        setMessage({ type: "error", text: "User not authenticated. Please log in again." });
+        navigate("/login");
+        return;
+      }
+  
+      const { token } = JSON.parse(authData);
+      
+      // ✅ Log request for debugging
+      console.log("Sending payment request with data:", {
+        receiverId: selectedUser._id,
+        amount,
+        transactionPin,
+      });
+  
+      console.log("Token being sent:", token); // Check if token is correct
+  
       const paymentResponse = await API.post(
         "/api/users/pay",
-        { receiverId: selectedUser._id, amount, transactionPin }, // ✅ Send transaction PIN
+        { receiverId: selectedUser._id, amount, transactionPin },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      setWalletBalance(paymentResponse.data.sender.walletBalance);
+  
+      console.log("Payment response:", paymentResponse.data);
+  
+      if (paymentResponse.data.senderBalance !== undefined) {
+        setWalletBalance(paymentResponse.data.senderBalance);
+      } else {
+        console.error("Missing senderBalance in response:", paymentResponse.data);
+        setMessage({ type: "error", text: "Payment successful, but balance update failed." });
+      }
+      
       setMessage({ type: "success", text: "Payment successful!" });
       setAmount("");
       setTransactionPin(""); // ✅ Reset PIN input
@@ -88,11 +113,13 @@ const Dashboard = () => {
       fetchDashboardData(token, userId);
     } catch (error) {
       console.error("Error making payment:", error);
+      console.log("Error details:", error.response?.data);
+  
       setMessage({ type: "error", text: error.response?.data?.message || "Payment failed." });
     } finally {
       setIsProcessing(false);
     }
-  };
+  };  
 
   return (
     <div className="bg-gray-100 min-h-screen">
