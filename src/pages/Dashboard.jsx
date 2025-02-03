@@ -82,33 +82,22 @@ const Dashboard = () => {
   
       const { token } = JSON.parse(authData);
       
-      // ✅ Log request for debugging
-      console.log("Sending payment request with data:", {
-        receiverId: selectedUser._id,
-        amount,
-        transactionPin,
-      });
-  
-      console.log("Token being sent:", token); // Check if token is correct
-  
       const paymentResponse = await API.post(
         "/api/users/pay",
         { receiverId: selectedUser._id, amount, transactionPin },
         { headers: { Authorization: `Bearer ${token}` } }
       );
   
-      console.log("Payment response:", paymentResponse.data);
   
       if (paymentResponse.data.senderBalance !== undefined) {
         setWalletBalance(paymentResponse.data.senderBalance);
       } else {
-        console.error("Missing senderBalance in response:", paymentResponse.data);
         setMessage({ type: "error", text: "Payment successful, but balance update failed." });
       }
       
       setMessage({ type: "success", text: "Payment successful!" });
       setAmount("");
-      setTransactionPin(""); // ✅ Reset PIN input
+      setTransactionPin(""); 
       setSelectedUser(null);
       fetchDashboardData(token, userId);
     } catch (error) {
